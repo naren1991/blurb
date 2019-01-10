@@ -1,11 +1,21 @@
 Package: blurb
 Type: Package
+Date: 2019-01-10
 Title: Create Short Time Based Data Stories
 Version: 0.0.0.9000
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Authors@R: c(
+      person("Naren","Srinivasan", email = "naren1991@gmail.com", role = c("aut", "cre"))
+      )
+Description: Create short stories based on data, that can serve as executive summaries, or
+illustrate an event, and export them to GIFs
+Depends: R (>= 3.4.0), magrittr, ggplot2
+Imports: shiny
+Suggests: 
+BugReports: https://github.com/naren1991/blurb/issues
+URL: https://github.com/naren1991/blurb
 Encoding: UTF-8
-LazyData: true
+License: Apache License 2.0
+LazyLoad: yes
+LazyData: yes
+RoxygenNote: 6.1.1
+VignetteBuilder: knitr
