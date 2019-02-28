@@ -6,10 +6,9 @@ Version: 0.0.0.9000
 Author: Authors@R: c(
       person("Naren","Srinivasan", email = "naren1991@gmail.com", role = c("aut", "cre"))
       )
-Description: Create short stories based on data, that can serve as executive summaries, or
-illustrate an event, and export them to GIFs
-Depends: R (>= 3.4.0), magrittr, ggplot2
-Imports: shiny
+Description: Create short stories based on data, that can serve as executive summaries, or illustrate an event, and export them to GIFs
+Depends: R (>= 3.4.0), magrittr, ggplot2, dplyr
+Imports: shiny, futile.logger
 Suggests: 
 BugReports: https://github.com/naren1991/blurb/issues
 URL: https://github.com/naren1991/blurb

@@ -1,0 +1,38 @@
+---
+title: "Creating blurbs"
+author: "Naren Srinivasan"
+date: "11 January 2019"
+output: html_document
+---
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    fig_width: 8
+vignette: >
+  %\VignetteIndexEntry{Creating blurbs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  
+  
+```{r}
+library(blurb)
+dp <- blurb::DataPipe(data_source_name = 'iris')
+str(dp)
+```
+
+```{r}
+viz <- Viz()
+
+scene = Scene(data_pipe = dp, viz = viz, num_frames = 2, timeline_var = 'Species')
+  
+str(scene)
+
+```
+
+```{r}
+
+scene %>% prep_frames() -> scene
+scene@frame_prep_info$commuted_timeline_val
+str(scene)
+```
+
