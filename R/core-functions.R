@@ -320,7 +320,7 @@ setMethod(
 #' @export
 setGeneric(
   name = "generate_frames",
-  def = function(object, chunking_type = 'cumulative', chunking_fn = mean, ...)
+  def = function(object, chunking_fn = default_chunking_fn, ...)
   {
     standardGeneric("generate_frames")
   }
@@ -377,11 +377,6 @@ get_scene_data <- function(df, timeline_var,
   return(df)
 }
 
-generate_frame <- function(d, viz, chunking_fn = chunking_fn, ...){
-  
-  #Where to loop for each cut?
-  
-}
 
 .generate_frames = function(object, chunking_fn = default_chunking_fn, ...)
 {
@@ -563,21 +558,67 @@ setGeneric(
     standardGeneric("make_blurb")
   }
 )
+.create_gif <- function(object, width = 600, height = 340, res = 100, name){
+  if(!dir.exists('./blurb_output')){
+    dir.create('./blurb_output')
+  }
+  
+  main_title <- object@annotations %>% dplyr::filter(parameter == 'title') %>% 
+    dplyr::pull(value)
+  main_subtitle <- object@annotations %>% dplyr::filter(parameter == 'subtitle') %>% 
+    dplyr::pull(value)
+  main_note <- object@annotations %>% dplyr::filter(parameter == 'note') %>% 
+    dplyr::pull(value)
+  
+  header <- magick::image_graph(width, height, res = res)
+  print(plot(0,type='n',axes=FALSE,ann=FALSE))
+  header <- magick::image_draw(header)
+  text(width/2, height/5, main_title, family = "monospace", cex = 2, srt = 0)
+  text(width/2, height/4, main_subtitle, family = "monospace", cex = 1, srt = 0)
+  text(width/2, height/3, main_note, family = "monospace", cex = 0.8, srt = 0)
+  dev.off()
+  
+  magick::image_write(image = header, path = './blurb_output/0_main_header.png')
 
-.make_blurb = function(object, type)
+  purrr::imap(object@scenes, function(sc, i){
+    
+    title <- sc@annotations %>% dplyr::filter(parameter == 'title') %>% 
+      dplyr::pull(value)
+    subtitle <- sc@annotations %>% dplyr::filter(parameter == 'subtitle') %>% 
+      dplyr::pull(value)
+    note <- sc@annotations %>% dplyr::filter(parameter == 'note') %>% 
+      dplyr::pull(value)
+    
+    sc_header <- magick::image_graph(width, height, res = res)
+    print(plot(0,type='n',axes=FALSE,ann=FALSE))
+    header <- magick::image_draw(sc_header)
+    text(width/2, height/5, title, family = "monospace", cex = 2, srt = 0)
+    text(width/2, height/4, subtitle, family = "monospace", cex = 1, srt = 0)
+    text(width/2, height/3, note, family = "monospace", cex = 0.8, srt = 0)
+    dev.off()
+    
+    magick::image_write(image = header, path = paste0('./blurb_output/scene_', i,
+                                                      '_0_header.png'))
+    
+    purrr::imap(sc@frame_results$rendered_frames, function(fr, j){
+      img <- magick::image_graph(width, height, res = res)
+      print(fr)
+      dev.off()
+      magick::image_write(image = img, 
+                          path = paste0('./blurb_output/scene_', i, '_frame_', j, '.png'))
+    })
+  })
+ 
+  dev.off()
+  system("convert -delay 80 ./blurb_output/*.png ./blurb.gif")
+  unlink('./blurb_output', recursive = T)
+}
+
+.make_blurb = function(object, type, name = 'blurb_output', ...)
 {
   tryCatch({
     if(type == 'gif'){
-      # Generate frames 
-      # Render frames
-      # Create gif
-        # Create working directory
-        # Generate annotation and save as png
-        # By scene
-          # Generate annotation  
-          # Save annotataions and frames as png
-        # Generate gif
-        # Remove working directory
+      create_gif(object, name, ...)
     }else{
       ## Exception
     }

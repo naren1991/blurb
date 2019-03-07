@@ -6,11 +6,10 @@
 \alias{generate_frames,Scene-method}
 \title{Generate frames}
 \usage{
-generate_frames(object, chunking_type = "cumulative",
-  chunking_fn = mean, ...)
+generate_frames(object, chunking_fn = default_chunking_fn, ...)
 
-\S4method{generate_frames}{Scene}(object, chunking_type = "cumulative",
-  chunking_fn = mean, ...)
+\S4method{generate_frames}{Scene}(object,
+  chunking_fn = default_chunking_fn, ...)
 }
 \description{
 Generate frames

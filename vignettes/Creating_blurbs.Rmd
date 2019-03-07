@@ -37,6 +37,17 @@ scene@frame_prep_info$commuted_timeline_val
 str(scene)
 ```
 ```{r}
+scene %>% generate_frames(y_var = "GNP", x_var = "Year") -> scene
+str(scene)
+
+scene %>% render_frames(y_var = 'GNP', x_var = 'Year') -> scene
+```
+
+
+```{r}
+b <- Blurb()
+b %>% add_scenes(scenes_list = list(scene)) -> b
+str(b)
 
 ```
 
