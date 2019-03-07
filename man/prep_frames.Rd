@@ -14,9 +14,12 @@ prep_frames(object)
 Prep frames
 }
 \seealso{
-Other Package core functions: \code{\link{DataPipe-class}},
-  \code{\link{Scene-class}}, \code{\link{Viz-class}},
-  \code{\link{get_data}},
-  \code{\link{initialize,DataPipe-method}}
+Other Package core functions: \code{\link{Blurb-class}},
+  \code{\link{DataPipe-class}}, \code{\link{Scene-class}},
+  \code{\link{Viz-class}}, \code{\link{add_scenes}},
+  \code{\link{generate_frames}},
+  \code{\link{get_data_subset}}, \code{\link{get_data}},
+  \code{\link{initialize,DataPipe-method}},
+  \code{\link{make_blurb}}, \code{\link{render_frames}}
 }
 \concept{Package core functions}

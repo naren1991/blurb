@@ -3,28 +3,63 @@
 \docType{methods}
 \name{initialize,DataPipe-method}
 \alias{initialize,DataPipe-method}
+\alias{initialize,Viz-method}
 \alias{initialize,Scene-method}
+\alias{initialize,Blurb-method}
 \title{This is the constructor for the \link{DataPipe} class}
 \usage{
 \S4method{initialize}{DataPipe}(.Object, type = "in-memory",
   data_source_name)
 
+\S4method{initialize}{Viz}(.Object, template_fn = default_template_fn)
+
 \S4method{initialize}{Scene}(.Object, viz, data_pipe, num_frames,
-  timeline_var)
+  timeline_var, timeline_var_type = "time-series", y_var, x_var)
+
+\S4method{initialize}{Blurb}(.Object)
 }
 \description{
+TODO: Provide sorting of data frame based on timeline var
 DataPipe constructor
 
+Viz constructor
+
 Scene constructor
+
+Blurb constructor
 }
 \seealso{
-Other Package core functions: \code{\link{DataPipe-class}},
-  \code{\link{Scene-class}}, \code{\link{Viz-class}},
-  \code{\link{get_data}}, \code{\link{prep_frames}}
+Other Package core functions: \code{\link{Blurb-class}},
+  \code{\link{DataPipe-class}}, \code{\link{Scene-class}},
+  \code{\link{Viz-class}}, \code{\link{add_scenes}},
+  \code{\link{generate_frames}},
+  \code{\link{get_data_subset}}, \code{\link{get_data}},
+  \code{\link{make_blurb}}, \code{\link{prep_frames}},
+  \code{\link{render_frames}}
 
-Other Package core functions: \code{\link{DataPipe-class}},
-  \code{\link{Scene-class}}, \code{\link{Viz-class}},
-  \code{\link{get_data}}, \code{\link{prep_frames}}
+Other Package core functions: \code{\link{Blurb-class}},
+  \code{\link{DataPipe-class}}, \code{\link{Scene-class}},
+  \code{\link{Viz-class}}, \code{\link{add_scenes}},
+  \code{\link{generate_frames}},
+  \code{\link{get_data_subset}}, \code{\link{get_data}},
+  \code{\link{make_blurb}}, \code{\link{prep_frames}},
+  \code{\link{render_frames}}
+
+Other Package core functions: \code{\link{Blurb-class}},
+  \code{\link{DataPipe-class}}, \code{\link{Scene-class}},
+  \code{\link{Viz-class}}, \code{\link{add_scenes}},
+  \code{\link{generate_frames}},
+  \code{\link{get_data_subset}}, \code{\link{get_data}},
+  \code{\link{make_blurb}}, \code{\link{prep_frames}},
+  \code{\link{render_frames}}
+
+Other Package core functions: \code{\link{Blurb-class}},
+  \code{\link{DataPipe-class}}, \code{\link{Scene-class}},
+  \code{\link{Viz-class}}, \code{\link{add_scenes}},
+  \code{\link{generate_frames}},
+  \code{\link{get_data_subset}}, \code{\link{get_data}},
+  \code{\link{make_blurb}}, \code{\link{prep_frames}},
+  \code{\link{render_frames}}
 }
 \concept{Package core functions}
 \keyword{internal}

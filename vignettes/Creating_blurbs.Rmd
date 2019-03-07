@@ -16,14 +16,15 @@ vignette: >
   
 ```{r}
 library(blurb)
-dp <- blurb::DataPipe(data_source_name = 'iris')
+dp <- blurb::DataPipe(data_source_name = 'longley')
 str(dp)
 ```
 
 ```{r}
 viz <- Viz()
 
-scene = Scene(data_pipe = dp, viz = viz, num_frames = 2, timeline_var = 'Species')
+scene = Scene(data_pipe = dp, viz = viz, num_frames = 2, timeline_var = 'Year', timeline_var_type = 'numeric',
+              y_var = 'GNP', x_var = 'Year')
   
 str(scene)
 
@@ -34,5 +35,8 @@ str(scene)
 scene %>% prep_frames() -> scene
 scene@frame_prep_info$commuted_timeline_val
 str(scene)
+```
+```{r}
+
 ```
 

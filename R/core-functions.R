@@ -5,6 +5,7 @@
 # Description: Core functions for creating data blurbs
 ##################################################################################################
 
+##### DataPipe class ########
 #' @name DataPipe-class
 #' @rdname DataPipe-class
 #' @title DataPipe class
@@ -24,8 +25,8 @@ DataPipe <- setClass(
 default_filter_fn <- function(df, indices = 1:10){
   return(df %>% dplyr::slice(indices))
 }
-get_data_subset <- function(df_name, filter_fn = default_filter_fn, ...){
-  df = eval(parse(text = df_name))
+subset_data <- function(df_name, filter_fn = default_filter_fn, ...){
+  df <- eval(parse(text = df_name))
   df %>% filter_fn(...) -> filtered_df
   return(filtered_df)
 }
@@ -53,10 +54,10 @@ setMethod(
       .Object@data_source_name <- data_source_name
       
       if(type == "in-memory"){
-      .Object@dataset_schema = get_data_subset(df_name = data_source_name, indices = 0)
+      .Object@dataset_schema = subset_data(df_name = data_source_name, indices = 0)
       }else if(.Object@type == "csv"){
         csv_data <- read.csv(data_source_name)
-        .Object@dataset_schema = get_data_subset(df_name = 'csv_data', indices = 0)
+        .Object@dataset_schema = subset_data(df_name = 'csv_data', indices = 0)
       }
       return(.Object)
     }, error = function(e) {
@@ -85,7 +86,7 @@ setGeneric(
 {
   tryCatch({
     filter_fn <- get_all_data_filter_fn
-    df <- get_data_subset(object@data_source_name, filter_fn = filter_fn)
+    df <- subset_data(object@data_source_name, filter_fn = filter_fn)
     return(df)
   }, error = function(e){
     futile.logger::flog.error(e, name = "logger.base")
@@ -102,6 +103,41 @@ setMethod(
   definition = .get_data
 )
 
+
+#' @name get_data_subset
+#' @rdname get_data_subset
+#' @title Get Data Subset
+#' @family Package core functions
+#' @export
+setGeneric(
+  name = "get_data_subset",
+  def = function(object, filter_fn, ...)
+  {
+    standardGeneric("get_data_subset")
+  }
+)
+
+.get_data_subset = function(object, filter_fn = get_all_data_filter_fn, ...)
+{
+  tryCatch({
+    df <- subset_data(object@data_source_name, filter_fn = filter_fn, ...)
+    return(df)
+  }, error = function(e){
+    futile.logger::flog.error(e, name = "logger.base")
+    stop()
+  }, warning = function(w){
+    futile.logger::flog.warn(w, name = "logger.base")
+  })
+}
+
+#' @rdname get_data_subset
+setMethod(
+  f = "get_data_subset",
+  signature = "DataPipe",
+  definition = .get_data_subset
+)
+
+##### Viz class ########
 #' @name Viz-class
 #' @rdname Viz-class
 #' @title Viz class
@@ -147,6 +183,7 @@ setMethod(
 )
 
 
+##### Scene class ########
 #' @name Scene-class
 #' @rdname Scene-class
 #' @title Scene class
@@ -160,7 +197,9 @@ Scene <- setClass(
     data_pipe = "DataPipe",
     visualization = "Viz",
     frame_creation_info = "tbl",
-    frame_prep_info = "list"
+    frame_prep_info = "list",
+    frame_results = "list",
+    annotations = "tbl"
   )
 )
 
@@ -175,7 +214,9 @@ Scene <- setClass(
 setMethod(
   f = "initialize",
   signature = "Scene",
-  definition = function(.Object, viz, data_pipe, num_frames, timeline_var)
+  definition = function(.Object, viz, data_pipe, num_frames, timeline_var, 
+                        timeline_var_type = 'time-series', y_var,
+                        x_var)
   {
     tryCatch({
       .Object@visualization <- viz
@@ -187,9 +228,23 @@ setMethod(
       )
       
       frame_creation_info %>% dplyr::add_row(parameter = "num_frames", value = num_frames) %>%
-        dplyr::add_row(parameter = "timeline_var", value = timeline_var) -> frame_creation_info
+        dplyr::add_row(parameter = "timeline_var", value = timeline_var) %>%
+        dplyr::add_row(parameter = "timeline_var_type", value = timeline_var_type)  %>%
+        dplyr::add_row(parameter = "y_var", value = y_var) %>%
+        dplyr::add_row(parameter = "x_var", value = x_var) -> frame_creation_info
 
       .Object@frame_creation_info <- frame_creation_info
+      
+      annotations <- dplyr::tibble(
+        parameter = character(),
+        value = character()
+      )
+      
+      annotations %>% dplyr::add_row(parameter = 'title', value = "<Title>") %>%
+        dplyr::add_row(parameter = 'subtitle', value = "<Subtitle>") %>%
+        dplyr::add_row(parameter = 'note', value = "<Note>") -> annotations
+      
+      .Object@annotations <- annotations
       
       
       return(.Object)
@@ -215,9 +270,13 @@ setGeneric(
   }
 )
 
-extrapolate_indices <- function(vector, skip_length){
-  unique_vals <- unique(vector)
-  commuted_seq_indices <- seq(from = 1, to = length(unique_vals), by = skip_length)
+extrapolate_indices <- function(timeline_vals, num_frames){
+  unique_vals <- timeline_vals %>% unique
+  num_unique_timeline_val <- unique_vals %>% length
+  skip_length <- ceiling(num_unique_timeline_val/ num_frames)
+  
+  commuted_seq_indices <- seq(to = num_unique_timeline_val, by = skip_length,
+                                    length.out = num_frames)
   return(unique_vals[commuted_seq_indices])
 }
 
@@ -228,18 +287,15 @@ extrapolate_indices <- function(vector, skip_length){
                                                                   dplyr::pull(value) %>% as.numeric
     timeline_var <- object@frame_creation_info %>% dplyr::filter(parameter == 'timeline_var') %>% 
                                                                  dplyr::pull(value)
+    timeline_var_type <- object@frame_creation_info %>% dplyr::filter(parameter == 'timeline_var_type') %>% 
+                                                                  dplyr::pull(value)
     
     timeline_vals <- object@data_pipe %>% get_data %>%
       dplyr::select(!!rlang::sym(timeline_var)) %>%
       dplyr::pull(!!rlang::sym(timeline_var)) 
-    num_unique_timeline_val <- timeline_vals %>% unique %>% length
-                                              
-                                                              
-    skip_length = ceiling(num_unique_timeline_val/ num_frames)
     
-    commuted_vector <- extrapolate_indices(timeline_vals, skip_length)
-    
-    object@frame_prep_info$commuted_timeline_val <- commuted_vector
+    commuted_timeline_vals <- extrapolate_indices(timeline_vals, num_frames)
+    object@frame_prep_info$commuted_timeline_vals <- commuted_timeline_vals
     
     return(object)
   }, error = function(e){
@@ -264,42 +320,94 @@ setMethod(
 #' @export
 setGeneric(
   name = "generate_frames",
-  def = function(object, chunking_type = 'cumulative', chunking_fun = mean, ...)
+  def = function(object, chunking_type = 'cumulative', chunking_fn = mean, ...)
   {
     standardGeneric("generate_frames")
   }
 )
 
-# Cumulative average
-default_chunking_fun <- function(d, y_var, x_var, timeline_var,
-                                 commuted_timeline_vals, current_timeline_val){
+chunking_fn_numeric_c_avg <- function(d, y_var, x_var, timeline_var, commuted_timeline_vals){
   
   
   d %>% dplyr::select(!!rlang::sym(y_var),
                       !!rlang::sym(x_var),
                       !!rlang::sym(timeline_var)) -> d
   
-  cut_index <- grep(current_timeline_val, commuted_timeline_vals, value = F)
-  subset_vals <- commuted_timeline_vals[1:cut_index]
-
+  # Sapply has faster performance
+  d$grouping <- sapply(1:nrow(d), FUN = function(t, vals, timeline_var){
+    r <- d[t,timeline_var]
+    ind <- which(r <= vals)
+    if(length(ind) == 0){
+      bucket <- d[nrow(d), timeline_var]
+    }else{
+      bucket <- vals[ind[1]]  
+    }
+    
+    return(bucket)
+  }, commuted_timeline_vals, timeline_var)
   
-  d %>% dplyr::filter(!!rlang::sym(timeline_var) %in% subset_vals) -> d
+  d %>% dplyr::mutate(!! y_var := dplyr::cummean(!!rlang::sym(y_var))) %>% 
+    dplyr::group_by(grouping) %>% dplyr::summarise(!! y_var := last(!!rlang::sym(y_var))) -> aggr_d
   
-  d %>% dplyr::group_by(!!rlang::sym(x_var)) %>% 
-        dplyr::summarise(!!rlang::sym(y_var) = mean(!!rlang::sym(y_var))) -> aggr_d
-  
+  aggr_d %>% dplyr::mutate(!! x_var := grouping) %>% dplyr::select(!!rlang::sym(y_var), 
+                                                                   !!rlang::sym(x_var)) -> aggr_d
   return(aggr_d)
+}
+
+default_chunking_fn <- function(d, y_var, x_var, timeline_var_type, timeline_var,
+                                commuted_timeline_vals, ...){
+  if(timeline_var_type == 'time-series'){
+    
+  }else if(timeline_var_type == 'numeric'){
+    aggr_d <- chunking_fn_numeric_c_avg(d, y_var, x_var, timeline_var,
+                                        commuted_timeline_vals)
+  }else if(timeline_var_type == 'category'){
+    #aggr_d <- chunking_fn_category_c_avg(d, y_var, x_var, timeline_var,
+      #                                   commuted_timeline_vals)
+  }
+  return(aggr_d)
+}
+
+get_scene_data <- function(df, timeline_var, 
+                           current_timeline_val){
+  timeline_vals <- df %>% dplyr::pull(!! timeline_var)
+  cut_index <- grep(current_timeline_val, timeline_vals, value = F)
+  subset_vals <- timeline_vals[1:cut_index]
+  df %>% dplyr::filter(!!rlang::sym(timeline_var) %in% subset_vals) -> df
+  return(df)
+}
+
+generate_frame <- function(d, viz, chunking_fn = chunking_fn, ...){
+  
+  #Where to loop for each cut?
   
 }
 
-generate_frame <- function(d, viz){
-  
-}
-
-.generate_frames = function(object, chunking_fun = default_chunking_fun, ...)
+.generate_frames = function(object, chunking_fn = default_chunking_fn, ...)
 {
   tryCatch({
+    y_var <- object@frame_creation_info %>% dplyr::filter(parameter == 'y_var') %>% 
+      dplyr::pull(value)
+    x_var <- object@frame_creation_info %>% dplyr::filter(parameter == 'x_var') %>% 
+      dplyr::pull(value)
+    timeline_var <- object@frame_creation_info %>% dplyr::filter(parameter == 'timeline_var') %>% 
+      dplyr::pull(value)
+    timeline_var_type <- object@frame_creation_info %>% dplyr::filter(parameter == 'timeline_var_type') %>% 
+      dplyr::pull(value)
+    commuted_timeline_vals <- object@frame_prep_info$commuted_timeline_val
+    data_pipe <- object@data_pipe
     
+ 
+    
+    object@frame_results$aggr_data <-  purrr::map(commuted_timeline_vals, .f = function(v){
+    d <- data_pipe %>% get_data_subset(filter_fn = get_scene_data, timeline_var = timeline_var,
+                                       current_timeline_val = v)
+    d %>% chunking_fn(y_var = y_var, x_var = x_var,
+                      timeline_var_type = timeline_var_type,
+                      timeline_var = timeline_var,
+                      commuted_timeline_vals = commuted_timeline_vals) -> aggr_d
+    return(aggr_d)
+  })
     
     return(object)
   }, error = function(e){
@@ -310,11 +418,183 @@ generate_frame <- function(d, viz){
   })
 }
 
-#' @rdname prep_frames
+#' @rdname generate_frames
 setMethod(
   f = "generate_frames",
   signature = "Scene",
   definition = .generate_frames
 )
+
+
+#' @name render_frames
+#' @rdname render_frames
+#' @title Render frames
+#' @family Package core functions
+#' @export
+setGeneric(
+  name = "render_frames",
+  def = function(object, ...)
+  {
+    standardGeneric("render_frames")
+  }
+)
+
+.render_frames = function(object, ...)
+{
+  tryCatch({
+    viz <- object@visualization
+    aggr_data <- object@frame_results$aggr_data
+    
+    object@frame_results$rendered_frames <- purrr::map(aggr_data, .f = function(d, ...){
+      frame <- viz@template_generator(d = d, ...)
+      return(frame)
+    }, ...)
+    return(object)
+  }, error = function(e){
+    futile.logger::flog.error(e, name = "logger.base")
+    stop()
+  }, warning = function(w){
+    futile.logger::flog.warn(w, name = "logger.base")
+  })
+}
+
+#' @rdname render_frames
+setMethod(
+  f = "render_frames",
+  signature = "Scene",
+  definition = .render_frames
+)
+
+
+##### Blurb class ########
+#' @name Blurb-class
+#' @rdname Blurb-class
+#' @title Blurb class
+#' @family Package core functions
+#' @exportClass Blurb
+#' @export Blurb
+
+Blurb <- setClass(
+  "Blurb",
+  slots = c(
+    scenes = "list",
+    annotations = "tbl"
+  )
+)
+
+
+#' Blurb constructor
+#' @docType methods
+#' @rdname initialize-methods
+#' @title This is the constructor for the \link{Blurb} class
+#' @family Package core functions
+#' @keywords internal
+
+setMethod(
+  f = "initialize",
+  signature = "Blurb",
+  definition = function(.Object)
+  {
+    tryCatch({
+      annotations <- dplyr::tibble(
+        parameter = character(),
+        value = character()
+      )
+      
+      annotations %>% dplyr::add_row(parameter = 'title', value = "<Title>") %>%
+        dplyr::add_row(parameter = 'subtitle', value = "<Subtitle>") %>%
+        dplyr::add_row(parameter = 'note', value = "<Note>") -> annotations
+      
+      .Object@annotations <- annotations
+      
+      
+      return(.Object)
+    }, error = function(e) {
+      futile.logger::flog.error(e, name = "logger.base")
+      stop()
+    }, warning = function(w) {
+      futile.logger::flog.warn(w, name = "logger.base")
+    })
+  }
+)
+
+#' @name add_scenes
+#' @rdname add_scenes
+#' @title Add scenes
+#' @family Package core functions
+#' @export
+setGeneric(
+  name = "add_scenes",
+  def = function(object, scenes_list)
+  {
+    standardGeneric("add_scenes")
+  }
+)
+
+.add_scenes = function(object, scenes_list)
+{
+  tryCatch({
+    object@scenes <- scenes_list
+    return(object)
+  }, error = function(e){
+    futile.logger::flog.error(e, name = "logger.base")
+    stop()
+  }, warning = function(w){
+    futile.logger::flog.warn(w, name = "logger.base")
+  })
+}
+
+#' @rdname add_scenes
+setMethod(
+  f = "add_scenes",
+  signature = "Blurb",
+  definition = .add_scenes
+)
+
+#' @name make_blurb
+#' @rdname make_blurb
+#' @title Create a blurb
+#' @family Package core functions
+#' @export
+setGeneric(
+  name = "make_blurb",
+  def = function(object, type = 'gif')
+  {
+    standardGeneric("make_blurb")
+  }
+)
+
+.make_blurb = function(object, type)
+{
+  tryCatch({
+    if(type == 'gif'){
+      # Generate frames 
+      # Render frames
+      # Create gif
+        # Create working directory
+        # Generate annotation and save as png
+        # By scene
+          # Generate annotation  
+          # Save annotataions and frames as png
+        # Generate gif
+        # Remove working directory
+    }else{
+      ## Exception
+    }
+  }, error = function(e){
+    futile.logger::flog.error(e, name = "logger.base")
+    stop()
+  }, warning = function(w){
+    futile.logger::flog.warn(w, name = "logger.base")
+  })
+}
+
+#' @rdname add_scenes
+setMethod(
+  f = "add_scenes",
+  signature = "Blurb",
+  definition = .add_scenes
+)
+
 
 
