@@ -1,0 +1,53 @@
+---
+title: "Creating blurbs"
+author: "Naren Srinivasan"
+date: "11 January 2019"
+output: html_document
+---
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    fig_width: 8
+vignette: >
+  %\VignetteIndexEntry{Creating blurbs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  
+  
+```{r}
+library(blurb)
+dp <- blurb::DataPipe(data_source_name = 'longley')
+str(dp)
+```
+
+```{r}
+viz <- Viz()
+
+scene = Scene(data_pipe = dp, viz = viz, num_frames = 2, timeline_var = 'Year', timeline_var_type = 'numeric',
+              y_var = 'GNP', x_var = 'Year')
+  
+str(scene)
+
+```
+
+```{r}
+
+scene %>% prep_frames() -> scene
+scene@frame_prep_info$commuted_timeline_val
+str(scene)
+```
+```{r}
+scene %>% generate_frames(y_var = "GNP", x_var = "Year") -> scene
+str(scene)
+
+scene %>% render_frames(y_var = 'GNP', x_var = 'Year') -> scene
+```
+
+
+```{r}
+b <- Blurb()
+b %>% add_scenes(scenes_list = list(scene)) -> b
+str(b)
+
+```
+
