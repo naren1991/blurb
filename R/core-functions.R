@@ -69,6 +69,7 @@ setMethod(
   }
 )
 
+##### get_data ########
 #' @name get_data
 #' @rdname get_data
 #' @title Get Data
@@ -103,7 +104,7 @@ setMethod(
   definition = .get_data
 )
 
-
+##### get_data_subset ########
 #' @name get_data_subset
 #' @rdname get_data_subset
 #' @title Get Data Subset
@@ -137,6 +138,39 @@ setMethod(
   definition = .get_data_subset
 )
 
+##### show_data_schema ########
+#' @name show_data_schema
+#' @rdname show_data_schema
+#' @title Show data schema
+#' @family Package core functions
+#' @export
+setGeneric(
+  name = "show_data_schema",
+  def = function(object)
+  {
+    standardGeneric("show_data_schema")
+  }
+)
+
+.show_data_schema = function(object)
+{
+  tryCatch({
+    return(object@dataset_schema)
+  }, error = function(e){
+    futile.logger::flog.error(e, name = "logger.base")
+    stop()
+  }, warning = function(w){
+    futile.logger::flog.warn(w, name = "logger.base")
+  })
+}
+
+#' @rdname show_data_schema
+setMethod(
+  f = "show_data_schema",
+  signature = "DataPipe",
+  definition = .show_data_schema
+)
+
 ##### Viz class ########
 #' @name Viz-class
 #' @rdname Viz-class
@@ -147,7 +181,6 @@ setMethod(
 Viz <- setClass(
   "Viz",
   slots = c(
-    name = "character",
     template_generator = "function")
 )
 
@@ -181,6 +214,41 @@ setMethod(
     })
   }
 )
+
+##### set_template_fn ########
+#' @name set_template_fn
+#' @rdname set_template_fn
+#' @title Set template function
+#' @family Package core functions
+#' @export
+setGeneric(
+  name = "set_template_fn",
+  def = function(object, template_fn)
+  {
+    standardGeneric("set_template_fn")
+  }
+)
+
+.set_template_fn = function(object, template_fn)
+{
+  tryCatch({
+    object@template_generator = template_fn
+    return(object)
+  }, error = function(e){
+    futile.logger::flog.error(e, name = "logger.base")
+    stop()
+  }, warning = function(w){
+    futile.logger::flog.warn(w, name = "logger.base")
+  })
+}
+
+#' @rdname set_template_fn
+setMethod(
+  f = "set_template_fn",
+  signature = "DataPipe",
+  definition = .set_template_fn
+)
+
 
 
 ##### Scene class ########
@@ -257,6 +325,7 @@ setMethod(
   }
 )
 
+##### prep_frames ########
 #' @name prep_frames
 #' @rdname prep_frames
 #' @title Prep frames
@@ -313,6 +382,7 @@ setMethod(
   definition = .prep_frames
 )
 
+##### generate_frames ########
 #' @name generate_frames
 #' @rdname generate_frames
 #' @title Generate frames
@@ -420,7 +490,7 @@ setMethod(
   definition = .generate_frames
 )
 
-
+##### render_frames ########
 #' @name render_frames
 #' @rdname render_frames
 #' @title Render frames
@@ -513,6 +583,7 @@ setMethod(
   }
 )
 
+##### add_scenes ########
 #' @name add_scenes
 #' @rdname add_scenes
 #' @title Add scenes
@@ -546,6 +617,31 @@ setMethod(
   definition = .add_scenes
 )
 
+.create_annotation <- function(title, subtitle, note,
+                              filename, width, height,
+                              text_color = 'black',
+                              background = 'white',
+                              font_family = 'monospace'){
+  tryCatch({
+    header <- magick::image_graph(width, height, res = res)
+    print(plot(0,type='n',axes=FALSE,ann=FALSE))
+    header <- magick::image_draw(header)
+    text(width/2, height/5, title, family = font_familt, cex = 2, srt = 0)
+    text(width/2, height/4, subtitle, family = font_family, cex = 1, srt = 0)
+    text(width/2, height/3, note, family = font_family, cex = 0.8, srt = 0)
+    dev.off()
+    
+    magick::image_write(image = header, 
+                        path = paste0('./blurb_output/', filename))
+  }, error = function(e){
+    futile.logger::flog.error(e, name = "logger.base")
+    stop()
+  }, warning = function(w){
+    futile.logger::flog.warn(w, name = "logger.base")
+  })
+}
+
+##### make_blurb ########
 #' @name make_blurb
 #' @rdname make_blurb
 #' @title Create a blurb
@@ -569,16 +665,10 @@ setGeneric(
     dplyr::pull(value)
   main_note <- object@annotations %>% dplyr::filter(parameter == 'note') %>% 
     dplyr::pull(value)
-  
-  header <- magick::image_graph(width, height, res = res)
-  print(plot(0,type='n',axes=FALSE,ann=FALSE))
-  header <- magick::image_draw(header)
-  text(width/2, height/5, main_title, family = "monospace", cex = 2, srt = 0)
-  text(width/2, height/4, main_subtitle, family = "monospace", cex = 1, srt = 0)
-  text(width/2, height/3, main_note, family = "monospace", cex = 0.8, srt = 0)
-  dev.off()
-  
-  magick::image_write(image = header, path = './blurb_output/0_main_header.png')
+  main_filnemame <- '0_main_header.png'
+
+  .create_annotation(title = main_title, subtitle = main_subtitle, note = main_note,
+                     filename = main_filename, width = width, height = height)
 
   purrr::imap(object@scenes, function(sc, i){
     
@@ -588,17 +678,10 @@ setGeneric(
       dplyr::pull(value)
     note <- sc@annotations %>% dplyr::filter(parameter == 'note') %>% 
       dplyr::pull(value)
+    filename <- paste0('scene_', i,'_0_header.png')
     
-    sc_header <- magick::image_graph(width, height, res = res)
-    print(plot(0,type='n',axes=FALSE,ann=FALSE))
-    header <- magick::image_draw(sc_header)
-    text(width/2, height/5, title, family = "monospace", cex = 2, srt = 0)
-    text(width/2, height/4, subtitle, family = "monospace", cex = 1, srt = 0)
-    text(width/2, height/3, note, family = "monospace", cex = 0.8, srt = 0)
-    dev.off()
-    
-    magick::image_write(image = header, path = paste0('./blurb_output/scene_', i,
-                                                      '_0_header.png'))
+    .create_annotation(title = title, subtitle = subtitle, note = note,
+                       filename = filename, width = width, height = height)
     
     purrr::imap(sc@frame_results$rendered_frames, function(fr, j){
       img <- magick::image_graph(width, height, res = res)
@@ -610,7 +693,7 @@ setGeneric(
   })
  
   dev.off()
-  system("convert -delay 80 ./blurb_output/*.png ./blurb.gif")
+  system(paste0("convert -delay 80 ./blurb_output/*.png ./", name, ".gif"))
   unlink('./blurb_output', recursive = T)
 }
 
@@ -630,11 +713,11 @@ setGeneric(
   })
 }
 
-#' @rdname add_scenes
+#' @rdname make_blurb
 setMethod(
-  f = "add_scenes",
+  f = "make_blurb",
   signature = "Blurb",
-  definition = .add_scenes
+  definition = .make_blurb
 )
 
 
