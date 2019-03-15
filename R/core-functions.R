@@ -325,6 +325,62 @@ setMethod(
   }
 )
 
+##### set_annotations ########
+#' @name set_annotations
+#' @rdname set_annotations
+#' @title Set annotations
+#' @family Package core functions
+#' @export
+setGeneric(
+  name = "set_annotations",
+  def = function(object, title, subtitle, note)
+  {
+    standardGeneric("set_annotations")
+  }
+)
+
+.set_annotations = function(object, title, subtitle, note)
+{
+  tryCatch({
+        object@annotations[which(object@annotations$parameter == 'title'), 'value'] <- title
+        object@annotations[which(object@annotations$parameter == 'subtitle'), 'value'] <- subtitle
+        object@annotations[which(object@annotations$parameter == 'note'), 'value'] <- note
+        return(object)
+  }, error = function(e){
+    futile.logger::flog.error(e, name = "logger.base")
+    stop()
+  }, warning = function(w){
+    futile.logger::flog.warn(w, name = "logger.base")
+  })
+}
+
+#' @rdname set_annotations
+setMethod(
+  f = "set_annotations",
+  signature = "Scene",
+  definition = .set_annotations
+)
+
+##### set_main_annotations ########
+#' @name set_main_annotations
+#' @rdname set_main_annotations
+#' @title Set main annotations
+#' @family Package core functions
+#' @export
+setGeneric(
+  name = "set_main_annotations",
+  def = function(object, title, subtitle, note)
+  {
+    standardGeneric("set_main_annotations")
+  }
+)
+#' @rdname set_main_annotations
+setMethod(
+  f = "set_main_annotations",
+  signature = "Blurb",
+  definition = .set_annotations
+)
+
 ##### prep_frames ########
 #' @name prep_frames
 #' @rdname prep_frames

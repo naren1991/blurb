@@ -2,11 +2,11 @@ Package: blurb
 Type: Package
 Date: 2019-01-10
 Title: Create Short Data Stories
-Version: 0.0.0.9000
+Version: 0.0.0.9001
 Author: Authors@R: c(
       person("Naren","Srinivasan", email = "naren1991@gmail.com", role = c("aut", "cre"))
       )
-Description: Create short stories based on data, that can serve as executive summaries, or illustrate an event, and export them to GIFs
+Description: Create short stories based on data, especially to illustrate transitions over time. Blurbs can serve as executive summaries, or illustrate an event and can be exported to various formats
 Depends: R (>= 3.4.0), magrittr, ggplot2, dplyr, magick
 Imports: futile.logger
 Suggests: 
