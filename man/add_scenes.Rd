@@ -9,8 +9,6 @@
 add_scenes(object, scenes_list)
 
 \S4method{add_scenes}{Blurb}(object, scenes_list)
-
-\S4method{add_scenes}{Blurb}(object, scenes_list)
 }
 \description{
 Add scenes
@@ -22,6 +20,8 @@ Other Package core functions: \code{\link{Blurb-class}},
   \code{\link{get_data_subset}}, \code{\link{get_data}},
   \code{\link{initialize,DataPipe-method}},
   \code{\link{make_blurb}}, \code{\link{prep_frames}},
-  \code{\link{render_frames}}
+  \code{\link{render_frames}},
+  \code{\link{set_template_fn}},
+  \code{\link{show_data_schema}}
 }
 \concept{Package core functions}

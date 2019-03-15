@@ -618,15 +618,15 @@ setMethod(
 )
 
 .create_annotation <- function(title, subtitle, note,
-                              filename, width, height,
+                              filename, width, height, res,
                               text_color = 'black',
                               background = 'white',
                               font_family = 'monospace'){
   tryCatch({
-    header <- magick::image_graph(width, height, res = res)
+    header <- magick::image_graph(width = width, height = height, res = res)
     print(plot(0,type='n',axes=FALSE,ann=FALSE))
     header <- magick::image_draw(header)
-    text(width/2, height/5, title, family = font_familt, cex = 2, srt = 0)
+    text(width/2, height/5, title, family = font_family, cex = 2, srt = 0)
     text(width/2, height/4, subtitle, family = font_family, cex = 1, srt = 0)
     text(width/2, height/3, note, family = font_family, cex = 0.8, srt = 0)
     dev.off()
@@ -649,7 +649,8 @@ setMethod(
 #' @export
 setGeneric(
   name = "make_blurb",
-  def = function(object, type = 'gif')
+  def = function(object, type = 'gif', 
+                 name = 'blurb_output', ...)
   {
     standardGeneric("make_blurb")
   }
@@ -665,10 +666,10 @@ setGeneric(
     dplyr::pull(value)
   main_note <- object@annotations %>% dplyr::filter(parameter == 'note') %>% 
     dplyr::pull(value)
-  main_filnemame <- '0_main_header.png'
+  main_filename <- '0_main_header.png'
 
   .create_annotation(title = main_title, subtitle = main_subtitle, note = main_note,
-                     filename = main_filename, width = width, height = height)
+                     filename = main_filename, width = width, height = height, res = res)
 
   purrr::imap(object@scenes, function(sc, i){
     
@@ -681,10 +682,10 @@ setGeneric(
     filename <- paste0('scene_', i,'_0_header.png')
     
     .create_annotation(title = title, subtitle = subtitle, note = note,
-                       filename = filename, width = width, height = height)
+                       filename = filename, width = width, height = height, res = res)
     
     purrr::imap(sc@frame_results$rendered_frames, function(fr, j){
-      img <- magick::image_graph(width, height, res = res)
+      img <- magick::image_graph(width = width, height = height, res = res)
       print(fr)
       dev.off()
       magick::image_write(image = img, 
@@ -697,11 +698,11 @@ setGeneric(
   unlink('./blurb_output', recursive = T)
 }
 
-.make_blurb = function(object, type, name = 'blurb_output', ...)
+.make_blurb = function(object, type, name, ...)
 {
   tryCatch({
     if(type == 'gif'){
-      create_gif(object, name, ...)
+      .create_gif(object, name, ...)
     }else{
       ## Exception
     }

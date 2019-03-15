@@ -23,31 +23,53 @@ str(dp)
 ```{r}
 viz <- Viz()
 
-scene = Scene(data_pipe = dp, viz = viz, num_frames = 2, timeline_var = 'Year', timeline_var_type = 'numeric',
+scene1 = Scene(data_pipe = dp, viz = viz, num_frames = 5, timeline_var = 'Year', timeline_var_type = 'numeric',
               y_var = 'GNP', x_var = 'Year')
   
-str(scene)
+str(scene1)
+
+```
+
+```{r}
+bar_chart_template <- function(d, y_var, x_var){
+  p <- ggplot2::ggplot(data = d, aes(y = !!rlang::sym(y_var),
+                                     x = !!rlang::sym(x_var))) +
+    geom_col()
+  return(p)
+}
+
+viz2 <- Viz(template_fn = bar_chart_template)
+scene2 <- Scene(data_pipe = dp, viz = viz2, num_frames = 5, timeline_var = 'Year', timeline_var_type =   'numeric', y_var = 'Unemployed', x_var = 'Armed.Forces')
 
 ```
 
 ```{r}
 
-scene %>% prep_frames() -> scene
-scene@frame_prep_info$commuted_timeline_val
-str(scene)
+scene1 %>% prep_frames() -> scene1
+scene1@frame_prep_info$commuted_timeline_val
+
+scene2 %>% prep_frames() -> scene2
+scene2@frame_prep_info$commuted_timeline_val
+
+
 ```
 ```{r}
-scene %>% generate_frames(y_var = "GNP", x_var = "Year") -> scene
-str(scene)
+scene1 %>% generate_frames(y_var = "GNP", x_var = "Year") -> scene1
+scene1 %>% render_frames(y_var = 'GNP', x_var = 'Year') -> scene1
 
-scene %>% render_frames(y_var = 'GNP', x_var = 'Year') -> scene
+scene2 %>% generate_frames(y_var = "Unemployed", x_var = "Armed.Forces") -> scene2
+scene2 %>% render_frames(y_var = 'Unemployed', x_var = 'Armed.Forces') -> scene2
+
 ```
 
 
 ```{r}
 b <- Blurb()
-b %>% add_scenes(scenes_list = list(scene)) -> b
-str(b)
+b %>% add_scenes(scenes_list = list(scene1, scene2)) -> b
 
+```
+
+```{r}
+#b %>% make_blurb(width = 600, height = 400, res = 100)
 ```
 
